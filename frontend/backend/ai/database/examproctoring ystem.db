@@ -1,0 +1,152 @@
+-- ============================================================================
+-- exam_schema.sql
+-- Exam content & response layer — AI Exam Proctoring System (SQLite dialect)
+-- Complements proctor_db.py (students / sessions / alerts).
+-- ============================================================================
+
+PRAGMA foreign_keys = ON;
+
+-- ---------------------------------------------------------------------------
+-- Questions belonging to an exam (exam_id references exams table in proctor_db)
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS questions (
+    question_id     TEXT PRIMARY KEY,
+    exam_id         TEXT NOT NULL,
+    seq_no          INTEGER NOT NULL,          -- display order within exam
+    question_text   TEXT NOT NULL,
+    question_type   TEXT NOT NULL DEFAULT 'mcq' CHECK (question_type IN ('mcq', 'multi_select', 'short_answer')),
+    marks           INTEGER NOT NULL DEFAULT 1,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (exam_id) REFERENCES exams(exam_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_questions_exam ON questions(exam_id, seq_no);
+
+-- ---------------------------------------------------------------------------
+-- Options for MCQ / multi-select questions
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS options (
+    option_id       TEXT PRIMARY KEY,
+    question_id     TEXT NOT NULL,
+    option_text     TEXT NOT NULL,
+    is_correct      INTEGER NOT NULL DEFAULT 0 CHECK (is_correct IN (0, 1)),
+    seq_no          INTEGER NOT NULL,
+    FOREIGN KEY (question_id) REFERENCES questions(question_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_options_question ON options(question_id, seq_no);
+
+-- ---------------------------------------------------------------------------
+-- Candidate responses, tied to a proctoring session
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS responses (
+    response_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id      TEXT NOT NULL,             -- references sessions(session_id)
+    question_id     TEXT NOT NULL,
+    option_id       TEXT,                      -- NULL if unanswered / short_answer
+    answer_text     TEXT,                      -- used for short_answer type
+    flagged         INTEGER NOT NULL DEFAULT 0 CHECK (flagged IN (0, 1)),
+    answered_at     TEXT,
+    UNIQUE (session_id, question_id),
+    FOREIGN KEY (session_id) REFERENCES sessions(session_id),
+    FOREIGN KEY (question_id) REFERENCES questions(question_id),
+    FOREIGN KEY (option_id) REFERENCES options(option_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_responses_session ON responses(session_id);
+
+-- ---------------------------------------------------------------------------
+-- Upsert a response (answer or re-answer a question)
+-- SQLite: use ON CONFLICT since (session_id, question_id) is UNIQUE
+-- ---------------------------------------------------------------------------
+-- INSERT INTO responses (session_id, question_id, option_id, answered_at)
+-- VALUES (:session_id, :question_id, :option_id, datetime('now'))
+-- ON CONFLICT(session_id, question_id)
+-- DO UPDATE SET option_id = excluded.option_id, answered_at = excluded.answered_at;
+
+-- ---------------------------------------------------------------------------
+-- Scoring view: per-response correctness
+-- ---------------------------------------------------------------------------
+CREATE VIEW IF NOT EXISTS v_response_scores AS
+SELECT
+    r.session_id,
+    r.question_id,
+    q.exam_id,
+    q.marks,
+    r.option_id,
+    o.is_correct,
+    CASE WHEN o.is_correct = 1 THEN q.marks ELSE 0 END AS marks_awarded
+FROM responses r
+JOIN questions q ON q.question_id = r.question_id
+LEFT JOIN options o ON o.option_id = r.option_id;
+
+-- ---------------------------------------------------------------------------
+-- Session score summary view
+-- ---------------------------------------------------------------------------
+CREATE VIEW IF NOT EXISTS v_session_scores AS
+SELECT
+    session_id,
+    exam_id,
+    COUNT(*)                       AS answered_count,
+    SUM(marks)                     AS max_marks,
+    SUM(marks_awarded)             AS scored_marks,
+    ROUND(100.0 * SUM(marks_awarded) / NULLIF(SUM(marks), 0), 2) AS pct_score
+FROM v_response_scores
+GROUP BY session_id, exam_id;
+
+-- ---------------------------------------------------------------------------
+-- Progress view: answered vs total questions per session
+-- ---------------------------------------------------------------------------
+CREATE VIEW IF NOT EXISTS v_session_progress AS
+SELECT
+    q.exam_id,
+    r.session_id,
+    COUNT(DISTINCT q.question_id)                                  AS total_questions,
+    COUNT(DISTINCT r.question_id)                                  AS answered_questions,
+    SUM(CASE WHEN r.flagged = 1 THEN 1 ELSE 0 END)                 AS flagged_questions
+FROM questions q
+LEFT JOIN responses r ON r.question_id = q.question_id
+GROUP BY q.exam_id, r.session_id;
+
+-- ============================================================================
+-- Sample seed data (Data Structures — Midterm)
+-- Assumes exams row 'EXAM-DS-MID' already exists via proctor_db.py
+-- ============================================================================
+
+INSERT OR IGNORE INTO questions (question_id, exam_id, seq_no, question_text, question_type, marks) VALUES
+    ('Q1', 'EXAM-DS-MID', 1, 'Which data structure uses LIFO order?', 'mcq', 1),
+    ('Q2', 'EXAM-DS-MID', 2, 'What is the time complexity of binary search?', 'mcq', 1),
+    ('Q3', 'EXAM-DS-MID', 3, 'Which traversal visits the root node first?', 'mcq', 1);
+
+INSERT OR IGNORE INTO options (option_id, question_id, option_text, is_correct, seq_no) VALUES
+    ('Q1-A', 'Q1', 'Queue',  0, 1),
+    ('Q1-B', 'Q1', 'Stack',  1, 2),
+    ('Q1-C', 'Q1', 'Array',  0, 3),
+    ('Q1-D', 'Q1', 'Heap',   0, 4),
+
+    ('Q2-A', 'Q2', 'O(n)',       0, 1),
+    ('Q2-B', 'Q2', 'O(log n)',   1, 2),
+    ('Q2-C', 'Q2', 'O(n log n)', 0, 3),
+    ('Q2-D', 'Q2', 'O(1)',       0, 4),
+
+    ('Q3-A', 'Q3', 'In-order',   0, 1),
+    ('Q3-B', 'Q3', 'Post-order', 0, 2),
+    ('Q3-C', 'Q3', 'Pre-order',  1, 3),
+    ('Q3-D', 'Q3', 'Level-order',0, 4);
+
+-- ============================================================================
+-- Example queries
+-- ============================================================================
+
+-- Full question paper with options, ordered for rendering
+-- SELECT q.question_id, q.seq_no, q.question_text, o.option_id, o.option_text, o.seq_no AS opt_seq
+-- FROM questions q JOIN options o ON o.question_id = q.question_id
+-- WHERE q.exam_id = 'EXAM-DS-MID'
+-- ORDER BY q.seq_no, o.seq_no;
+
+-- Session score for report
+-- SELECT * FROM v_session_scores WHERE session_id = 'SESSION-XXXX';
+
+-- Unanswered question count for a session
+-- SELECT total_questions - answered_questions AS unanswered
+-- FROM v_session_progress WHERE session_id = 'SESSION-XXXX';

@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session Report — AI Proctoring System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf8f4;
+    --paper-raised:#ffffff;
+    --ink:#1c1d21;
+    --ink-soft:#5a5c66;
+    --ink-faint:#9a9ba3;
+    --line:#e3e0d8;
+    --navy:#1f2a4d;
+    --navy-soft:#3a4a7a;
+    --seal:#9c2b2b;
+    --seal-soft:#c24f4f;
+    --good:#2f6b3f;
+    --good-bg:#eaf3ec;
+    --warn:#9c6b1a;
+    --warn-bg:#faf1de;
+    --bad:#9c2b2b;
+    --bad-bg:#f8eaea;
+    --radius:6px;
+    --serif:'Newsreader', Georgia, serif;
+    --sans:'Inter', -apple-system, sans-serif;
+    --mono:'IBM Plex Mono', monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    padding:40px 24px 80px;
+  }
+
+  .page{
+    max-width:980px;
+    margin:0 auto;
+  }
+
+  /* ---------- Header ---------- */
+  .report-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    border-bottom:2px solid var(--navy);
+    padding-bottom:24px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+
+  .report-header .title-block h1{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:32px;
+    color:var(--navy);
+    letter-spacing:-0.01em;
+  }
+
+  .report-header .title-block .subtitle{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin-top:4px;
+  }
+
+  .report-meta{
+    text-align:right;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+
+  .report-meta .session-id{
+    color:var(--navy);
+    font-weight:500;
+  }
+
+  /* ---------- Summary strip ---------- */
+  .summary-strip{
+    display:grid;
+    grid-template-columns:1.2fr 1fr 1fr 1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin-bottom:32px;
+  }
+
+  .summary-cell{
+    background:var(--paper-raised);
+    padding:20px 22px;
+  }
+
+  .summary-cell .label{
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-faint);
+    margin-bottom:8px;
+  }
+
+  .summary-cell .value{
+    font-family:var(--serif);
+    font-size:26px;
+    font-weight:600;
+    color:var(--ink);
+  }
+
+  .summary-cell .value.trust-good{color:var(--good);}
+  .summary-cell .value.trust-warn{color:var(--warn);}
+  .summary-cell .value.trust-bad{color:var(--bad);}
+
+  .summary-cell .sub{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-top:4px;
+  }
+
+  .verdict-pill{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:3px 10px;
+    border-radius:100px;
+    margin-top:6px;
+  }
+  .verdict-pill.clear{background:var(--good-bg);color:var(--good);}
+  .verdict-pill.review{background:var(--warn-bg);color:var(--warn);}
+  .verdict-pill.flagged{background:var(--bad-bg);color:var(--bad);}
+
+  /* ---------- Section ---------- */
+  section{margin-bottom:32px;}
+
+  section h2{
+    font-family:var(--serif);
+    font-size:19px;
+    font-weight:600;
+    color:var(--navy);
+    margin-bottom:14px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+
+  /* ---------- Candidate / Exam info grid ---------- */
+  .info-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 26px;
+  }
+
+  .info-row{
+    display:flex;
+    justify-content:space-between;
+    padding:7px 0;
+    border-bottom:1px dashed var(--line);
+    font-size:14px;
+  }
+  .info-row:last-child{border-bottom:none;}
+  .info-row .k{color:var(--ink-soft);}
+  .info-row .v{font-weight:500;color:var(--ink);font-family:var(--mono);font-size:13px;}
+
+  /* ---------- Trust score visual ---------- */
+  .trust-panel{
+    display:flex;
+    gap:32px;
+    align-items:center;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px;
+    flex-wrap:wrap;
+  }
+
+  .trust-gauge-wrap{flex:0 0 auto;text-align:center;}
+
+  .trust-gauge-num{
+    font-family:var(--serif);
+    font-size:14px;
+    fill:var(--ink);
+    font-weight:600;
+  }
+
+  .trust-breakdown{flex:1;min-width:260px;}
+
+  .penalty-row{
+    display:grid;
+    grid-template-columns:1fr 90px 60px;
+    align-items:center;
+    gap:12px;
+    padding:8px 0;
+    font-size:13px;
+    border-bottom:1px solid var(--line);
+  }
+  .penalty-row:last-child{border-bottom:none;}
+
+  .penalty-bar-track{
+    height:6px;
+    background:var(--line);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .penalty-bar-fill{
+    height:100%;
+    background:var(--seal-soft);
+    border-radius:3px;
+  }
+
+  .penalty-count{
+    font-family:var(--mono);
+    text-align:right;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- Alert timeline ---------- */
+  .timeline{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:6px 0;
+  }
+
+  .timeline-item{
+    display:grid;
+    grid-template-columns:78px 90px 1fr 70px;
+    align-items:center;
+    gap:14px;
+    padding:11px 22px;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .timeline-item:last-child{border-bottom:none;}
+
+  .timeline-item .ts{
+    font-family:var(--mono);
+    color:var(--ink-faint);
+    font-size:12px;
+  }
+
+  .sev-tag{
+    font-family:var(--mono);
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    padding:2px 8px;
+    border-radius:100px;
+    text-align:center;
+    width:fit-content;
+  }
+  .sev-tag.low{background:var(--good-bg);color:var(--good);}
+  .sev-tag.medium{background:var(--warn-bg);color:var(--warn);}
+  .sev-tag.high{background:var(--bad-bg);color:var(--bad);}
+
+  .timeline-item .desc{color:var(--ink);}
+  .timeline-item .desc .event-type{color:var(--ink-soft);font-size:11px;display:block;margin-top:2px;font-family:var(--mono);}
+
+  .timeline-item .penalty{
+    font-family:var(--mono);
+    text-align:right;
+    color:var(--seal);
+  }
+
+  .timeline-empty{
+    padding:28px;
+    text-align:center;
+    color:var(--ink-faint);
+    font-size:13px;
+    font-style:italic;
+    font-family:var(--serif);
+  }
+
+  /* ---------- Footer / actions ---------- */
+  .actions{
+    display:flex;
+    gap:12px;
+    margin-top:36px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+
+  button{
+    font-family:var(--sans);
+    font-size:13px;
+    font-weight:500;
+    padding:10px 18px;
+    border-radius:var(--radius);
+    border:1px solid var(--navy);
+    background:var(--paper-raised);
+    color:var(--navy);
+    cursor:pointer;
+    transition:background 0.15s ease, color 0.15s ease;
+  }
+  button:hover{background:var(--navy);color:#fff;}
+
+  button.primary{
+    background:var(--navy);
+    color:#fff;
+  }
+  button.primary:hover{background:var(--navy-soft);}
+
+  .report-footer{
+    margin-top:40px;
+    text-align:center;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-faint);
+    letter-spacing:0.03em;
+  }
+
+  @media print{
+    body{padding:0;background:#fff;}
+    .actions{display:none;}
+    .summary-cell, .info-grid, .trust-panel, .timeline{border-color:#ccc;}
+  }
+
+  @media (max-width:720px){
+    .summary-strip{grid-template-columns:1fr 1fr;}
+    .info-grid{grid-template-columns:1fr;}
+    .timeline-item{grid-template-columns:60px 1fr;grid-template-areas:"ts sev" "desc desc" "penalty penalty";}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="report-header">
+    <div class="title-block">
+      <h1>Exam Session Report</h1>
+      <div class="subtitle">AI Proctoring System — Post-Exam Summary</div>
+    </div>
+    <div class="report-meta">
+      <div>Session <span class="session-id" id="meta-session-id">SES-000000</span></div>
+      <div id="meta-generated">Generated —</div>
+    </div>
+  </header>
+
+  <div class="summary-strip" id="summary-strip">
+    <div class="summary-cell">
+      <div class="label">Trust Score</div>
+      <div class="value" id="summary-trust">—</div>
+      <span class="verdict-pill" id="summary-verdict">—</span>
+    </div>
+    <div class="summary-cell">
+      <div class="label">Total Alerts</div>
+      <div class="value" id="summary-alerts">0</div>
+      <div class="sub" id="summary-alerts-sub">0 high severity</div>
+    </div>
+    <div class="summary-cell">
+      <div class="label">Duration</div>
+      <div class="value" id="summary-duration">00:00</div>
+      <div class="sub" id="summary-duration-sub">of scheduled time</div>
+    </div>
+    <div class="summary-cell">
+      <div class="label">Questions</div>
+      <div class="value" id="summary-questions">0 / 0</div>
+      <div class="sub" id="summary-questions-sub">answered</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Candidate &amp; Session</h2>
+    <div class="info-grid">
+      <div class="col">
+        <div class="info-row"><span class="k">Candidate name</span><span class="v" id="info-name">—</span></div>
+        <div class="info-row"><span class="k">Candidate ID</span><span class="v" id="info-id">—</span></div>
+        <div class="info-row"><span class="k">Email</span><span class="v" id="info-email">—</span></div>
+        <div class="info-row"><span class="k">Exam title</span><span class="v" id="info-exam">—</span></div>
+      </div>
+      <div class="col">
+        <div class="info-row"><span class="k">Started at</span><span class="v" id="info-start">—</span></div>
+        <div class="info-row"><span class="k">Ended at</span><span class="v" id="info-end">—</span></div>
+        <div class="info-row"><span class="k">Device / Browser</span><span class="v" id="info-device">—</span></div>
+        <div class="info-row"><span class="k">IP address</span><span class="v" id="info-ip">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Trust Score Breakdown</h2>
+    <div class="trust-panel">
+      <div class="trust-gauge-wrap">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="62" fill="none" stroke="#e3e0d8" stroke-width="14"/>
+          <circle id="gauge-arc" cx="75" cy="75" r="62" fill="none" stroke="#2f6b3f"
+                  stroke-width="14" stroke-linecap="round"
+                  stroke-dasharray="389.6" stroke-dashoffset="389.6"
+                  transform="rotate(-90 75 75)"/>
+          <text x="75" y="80" text-anchor="middle" class="trust-gauge-num" id="gauge-number" font-size="30">—</text>
+        </svg>
+      </div>
+      <div class="trust-breakdown" id="penalty-breakdown">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Alert Timeline</h2>
+    <div class="timeline" id="alert-timeline">
+      <div class="timeline-empty">No alerts recorded for this session.</div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button class="primary" id="btn-export-csv">Export CSV</button>
+    <button id="btn-export-json">Export JSON</button>
+    <button id="btn-print">Print Report</button>
+    <button id="btn-load-sample">Load Sample Data</button>
+  </div>
+
+  <div class="report-footer">
+    Generated by the AI Proctoring System — this report reflects automated behavioral heuristics and should be reviewed by an examiner before any disciplinary action.
+  </div>
+
+</div>
+
+<script>
+/* ==========================================================
+   Session Report renderer
+   Consumes a session object shaped like:
+   {
+     session_id, generated_at,
+     candidate: { name, id, email },
+     exam: { title, started_at, ended_at, device, ip,
+              questions_total, questions_answered,
+              duration_seconds, scheduled_seconds },
+     trust_score: 0-100,
+     verdict: "clear" | "review" | "flagged",
+     penalties: [ { type, label, count, points } ],
+     alerts: [ { ts, severity, type, description, penalty } ]
+   }
+   Replace loadSampleReport() with a fetch() to your backend
+   export (e.g. proctor_db.py session export) or read a CSV
+   produced by ProctorEngine.exportCSV().
+   ========================================================== */
+
+function fmtTime(totalSeconds){
+  const m = Math.floor(totalSeconds/60).toString().padStart(2,'0');
+  const s = Math.floor(totalSeconds%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+function fmtDateTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d)) return iso;
+  return d.toLocaleString(undefined, {
+    year:'numeric', month:'short', day:'2-digit',
+    hour:'2-digit', minute:'2-digit'
+  });
+}
+
+function trustClass(score){
+  if(score >= 80) return 'trust-good';
+  if(score >= 50) return 'trust-warn';
+  return 'trust-bad';
+}
+
+function verdictInfo(verdict){
+  const map = {
+    clear:   { label:'Clear',        cls:'clear'   },
+    review:  { label:'Needs Review', cls:'review'  },
+    flagged: { label:'Flagged',      cls:'flagged' }
+  };
+  return map[verdict] || { label: verdict || '—', cls:'review' };
+}
+
+function renderReport(data){
+  document.getElementById('meta-session-id').textContent = data.session_id || 'SES-000000';
+  document.getElementById('meta-generated').textContent = 'Generated ' + fmtDateTime(data.generated_at || new Date().toISOString());
+
+  // Summary strip
+  const trustEl = document.getElementById('summary-trust');
+  trustEl.textContent = data.trust_score ?? '—';
+  trustEl.className = 'value ' + trustClass(data.trust_score ?? 0);
+
+  const v = verdictInfo(data.verdict);
+  const verdictEl = document.getElementById('summary-verdict');
+  verdictEl.textContent = v.label;
+  verdictEl.className = 'verdict-pill ' + v.cls;
+
+  const alerts = data.alerts || [];
+  const highCount = alerts.filter(a => a.severity === 'high').length;
+  document.getElementById('summary-alerts').textContent = alerts.length;
+  document.getElementById('summary-alerts-sub').textContent = `${highCount} high severity`;
+
+  const dur = data.exam?.duration_seconds ?? 0;
+  const scheduled = data.exam?.scheduled_seconds ?? 0;
+  document.getElementById('summary-duration').textContent = fmtTime(dur);
+  document.getElementById('summary-duration-sub').textContent = scheduled ? `of ${fmtTime(scheduled)} scheduled` : 'scheduled time n/a';
+
+  const qa = data.exam?.questions_answered ?? 0;
+  const qt = data.exam?.questions_total ?? 0;
+  document.getElementById('summary-questions').textContent = `${qa} / ${qt}`;
+
+  // Candidate / session info
+  document.getElementById('info-name').textContent = data.candidate?.name || '—';
+  document.getElementById('info-id').textContent = data.candidate?.id || '—';
+  document.getElementById('info-email').textContent = data.candidate?.email || '—';
+  document.getElementById('info-exam').textContent = data.exam?.title || '—';
+  document.getElementById('info-start').textContent = fmtDateTime(data.exam?.started_at);
+  document.getElementById('info-end').textContent = fmtDateTime(data.exam?.ended_at);
+  document.getElementById('info-device').textContent = data.exam?.device || '—';
+  document.getElementById('info-ip').textContent = data.exam?.ip || '—';
+
+  // Trust gauge
+  const score = Math.max(0, Math.min(100, data.trust_score ?? 0));
+  const circumference = 389.6; // 2 * PI * 62
+  const offset = circumference * (1 - score/100);
+  const arc = document.getElementById('gauge-arc');
+  arc.style.strokeDashoffset = offset;
+  arc.setAttribute('stroke', score >= 80 ? '#2f6b3f' : score >= 50 ? '#9c6b1a' : '#9c2b2b');
+  document.getElementById('gauge-number').textContent = score;
+
+  // Penalty breakdown
+  const penalties = data.penalties || [];
+  const breakdownEl = document.getElementById('penalty-breakdown');
+  breakdownEl.innerHTML = '';
+  const maxPoints = Math.max(1, ...penalties.map(p => p.points || 0));
+  if(penalties.length === 0){
+    breakdownEl.innerHTML = '<div style="color:var(--ink-faint);font-size:13px;">No penalties applied.</div>';
+  } else {
+    penalties.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'penalty-row';
+      const pct = Math.round(((p.points || 0) / maxPoints) * 100);
+      row.innerHTML = `
+        <span>${p.label}</span>
+        <span class="penalty-bar-track"><span class="penalty-bar-fill" style="width:${pct}%"></span></span>
+        <span class="penalty-count">${p.count}× / -${p.points}</span>
+      `;
+      breakdownEl.appendChild(row);
+    });
+  }
+
+  // Alert timeline
+  const timelineEl = document.getElementById('alert-timeline');
+  timelineEl.innerHTML = '';
+  if(alerts.length === 0){
+    timelineEl.innerHTML = '<div class="timeline-empty">No alerts recorded for this session.</div>';
+  } else {
+    alerts.forEach(a => {
+      const item = document.createElement('div');
+      item.className = 'timeline-item';
+      item.innerHTML = `
+        <span class="ts">${a.ts || '—'}</span>
+        <span class="sev-tag ${a.severity || 'low'}">${a.severity || 'low'}</span>
+        <span class="desc">${a.description || ''}<span class="event-type">${a.type || ''}</span></span>
+        <span class="penalty">${a.penalty ? '-' + a.penalty : ''}</span>
+      `;
+      timelineEl.appendChild(item);
+    });
+  }
+}
+
+function loadSampleReport(){
+  renderReport({
+    session_id: 'SES-240811-0042',
+    generated_at: new Date().toISOString(),
+    candidate: { name: 'Ananya Sharma', id: 'STU-1042', email: 'ananya.sharma@example.edu' },
+    exam: {
+      title: 'Data Structures — Midterm Exam',
+      started_at: '2026-08-01T09:00:00',
+      ended_at: '2026-08-01T10:28:00',
+      device: 'Chrome 126 / Windows 11',
+      ip: '203.0.113.42',
+      questions_total: 30,
+      questions_answered: 28,
+      duration_seconds: 5280,
+      scheduled_seconds: 5400
+    },
+    trust_score: 68,
+    verdict: 'review',
+    penalties: [
+      { type:'tab_switch', label:'Tab / window switch', count:4, points:20 },
+      { type:'no_face', label:'Face not detected', count:6, points:9 },
+      { type:'multi_face', label:'Multiple faces detected', count:1, points:3 },
+      { type:'gaze_away', label:'Prolonged gaze away', count:5, points:0 }
+    ],
+    alerts: [
+      { ts:'00:04:12', severity:'medium', type:'gaze_away', description:'Candidate looked away from screen for 8s', penalty:null },
+      { ts:'00:11:47', severity:'high', type:'tab_switch', description:'Browser tab switched away from exam window', penalty:5 },
+      { ts:'00:19:03', severity:'low', type:'no_face', description:'Face not detected in frame for 3s', penalty:1.5 },
+      { ts:'00:26:55', severity:'high', type:'multi_face', description:'Two faces detected in webcam frame', penalty:3 },
+      { ts:'00:33:20', severity:'high', type:'tab_switch', description:'Browser tab switched away from exam window', penalty:5 },
+      { ts:'00:41:08', severity:'low', type:'no_face', description:'Face not detected in frame for 4s', penalty:1.5 },
+      { ts:'00:55:31', severity:'high', type:'tab_switch', description:'Browser tab switched away from exam window', penalty:5 },
+      { ts:'01:02:14', severity:'medium', type:'gaze_away', description:'Candidate looked away from screen for 6s', penalty:null },
+      { ts:'01:14:49', severity:'high', type:'tab_switch', description:'Browser tab switched away from exam window', penalty:5 }
+    ]
+  });
+}
+
+function toCSV(alerts){
+  const header = 'timestamp,severity,type,description,penalty\n';
+  const rows = alerts.map(a =>
+    [a.ts, a.severity, a.type, `"${(a.description||'').replace(/"/g,'""')}"`, a.penalty ?? '']
+    .join(',')
+  ).join('\n');
+  return header + rows;
+}
+
+function download(filename, content, mime){
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+let currentReport = null;
+const originalRender = renderReport;
+renderReport = function(data){ currentReport = data; originalRender(data); };
+
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+  if(!currentReport) return;
+  download(`${currentReport.session_id || 'session'}_alerts.csv`, toCSV(currentReport.alerts || []), 'text/csv');
+});
+
+document.getElementById('btn-export-json').addEventListener('click', () => {
+  if(!currentReport) return;
+  download(`${currentReport.session_id || 'session'}_report.json`, JSON.stringify(currentReport, null, 2), 'application/json');
+});
+
+document.getElementById('btn-print').addEventListener('click', () => window.print());
+document.getElementById('btn-load-sample').addEventListener('click', loadSampleReport);
+
+// Auto-load sample data on first paint; replace with real data fetch as needed.
+loadSampleReport();
+</script>
+
+</body>
+</html>

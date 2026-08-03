@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSA301 — Final Examination</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5F6F1;
+    --paper-raised:#FFFFFF;
+    --line:#DBDCD3;
+    --ink:#23262B;
+    --ink-dim:#5C6169;
+    --ink-faint:#9498A0;
+    --navy:#1E2A4A;
+    --navy-soft:#EFF1F6;
+    --seal:#8E3B3B;
+    --seal-soft:#F7EAEA;
+    --ok:#4C7A63;
+    --ok-soft:#E7F0EA;
+    --amber:#9C7A2E;
+    --amber-soft:#F5EEDC;
+    --radius:8px;
+    --font-display:'Newsreader', serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14.5px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit; font-size:inherit;}
+  button:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--navy);
+    outline-offset:2px;
+  }
+
+  /* subtle security-paper texture */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    opacity:0.5;
+    background-image:
+      repeating-linear-gradient(115deg, rgba(30,42,74,0.015) 0px, rgba(30,42,74,0.015) 1px, transparent 1px, transparent 14px);
+    z-index:0;
+  }
+
+  .app{position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column;}
+
+  /* ---------- Letterhead ---------- */
+  .letterhead{
+    background:var(--paper-raised);
+    border-bottom:1px solid var(--line);
+    padding:14px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+  }
+  .letterhead-left{display:flex; align-items:center; gap:14px;}
+  .seal{
+    width:40px; height:40px; border-radius:50%;
+    border:1.5px solid var(--navy);
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+    flex-shrink:0;
+  }
+  .seal::before{
+    content:"";
+    position:absolute; inset:4px;
+    border-radius:50%;
+    border:1px dashed var(--navy);
+    opacity:0.5;
+  }
+  .seal svg{position:relative;}
+  .letterhead-titles h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:18px;
+    letter-spacing:0.2px;
+  }
+  .letterhead-titles p{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--ink-dim);
+    margin-top:2px;
+    letter-spacing:0.3px;
+  }
+
+  .letterhead-right{display:flex; align-items:center; gap:22px;}
+  .field{text-align:right;}
+  .field .k{
+    font-family:var(--font-mono);
+    font-size:10px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:0.8px;
+  }
+  .field .v{
+    font-family:var(--font-mono);
+    font-size:13.5px;
+    font-weight:600;
+    margin-top:2px;
+  }
+  .timer .v{color:var(--navy);}
+  .timer.critical .v{color:var(--seal);}
+
+  .submit-btn{
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    padding:9px 18px;
+    border-radius:6px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .submit-btn:hover{background:#16203A;}
+
+  /* ---------- Body layout ---------- */
+  .layout{
+    flex:1;
+    display:grid;
+    grid-template-columns:1fr 260px;
+    gap:0;
+    max-width:1180px;
+    width:100%;
+    margin:0 auto;
+    padding:26px 28px 100px;
+  }
+
+  /* ---------- Question panel ---------- */
+  .question-panel{padding-right:36px; border-right:1px solid var(--line);}
+  .q-meta{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .q-count{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+  }
+  .q-marks{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    color:var(--ink-dim);
+  }
+  .q-text{
+    font-family:var(--font-display);
+    font-size:19px;
+    font-weight:500;
+    line-height:1.55;
+    margin:10px 0 24px;
+    max-width:60ch;
+  }
+
+  .options{display:flex; flex-direction:column; gap:10px; max-width:56ch;}
+  .option{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:13px 16px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--paper-raised);
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .option:hover{border-color:var(--navy);}
+  .option.selected{
+    border-color:var(--navy);
+    background:var(--navy-soft);
+  }
+  .option-letter{
+    width:22px; height:22px; border-radius:50%;
+    border:1.5px solid var(--ink-faint);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--ink-dim);
+    flex-shrink:0;
+  }
+  .option.selected .option-letter{
+    border-color:var(--navy);
+    background:var(--navy);
+    color:#fff;
+  }
+  .option-text{padding-top:1px;}
+
+  .q-actions{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:28px;
+    max-width:56ch;
+  }
+  .ghost-btn{
+    background:none;
+    border:1px solid var(--line);
+    padding:9px 16px;
+    border-radius:6px;
+    color:var(--ink-dim);
+    cursor:pointer;
+  }
+  .ghost-btn:hover{border-color:var(--ink-dim); color:var(--ink);}
+  .ghost-btn.marked{border-color:var(--amber); color:var(--amber); background:var(--amber-soft);}
+  .nav-btns{display:flex; gap:8px;}
+  .primary-btn{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    padding:9px 18px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:500;
+  }
+  .primary-btn:disabled{opacity:0.35; cursor:not-allowed;}
+
+  /* ---------- Question navigator ---------- */
+  .navigator{padding-left:28px;}
+  .nav-heading{
+    font-family:var(--font-mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.8px;
+    color:var(--ink-faint);
+    margin-bottom:12px;
+  }
+  .nav-grid{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:8px;
+    margin-bottom:22px;
+  }
+  .nav-cell{
+    aspect-ratio:1;
+    border-radius:6px;
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--ink-dim);
+    cursor:pointer;
+  }
+  .nav-cell.answered{background:var(--ok-soft); border-color:var(--ok); color:var(--ok);}
+  .nav-cell.marked{background:var(--amber-soft); border-color:var(--amber); color:var(--amber);}
+  .nav-cell.current{border-color:var(--navy); border-width:2px; color:var(--navy); font-weight:700;}
+
+  .legend{display:flex; flex-direction:column; gap:6px; font-size:11.5px; color:var(--ink-dim); margin-bottom:24px;}
+  .legend-row{display:flex; align-items:center; gap:8px;}
+  .legend-dot{width:9px; height:9px; border-radius:3px; flex-shrink:0;}
+  .legend-dot.answered{background:var(--ok);}
+  .legend-dot.marked{background:var(--amber);}
+  .legend-dot.unanswered{background:var(--paper-raised); border:1px solid var(--line);}
+
+  .summary{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--ink-dim);
+    border-top:1px solid var(--line);
+    padding-top:14px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+  .summary strong{color:var(--ink);}
+
+  /* ---------- Proctoring status footer ---------- */
+  .proctor-strip{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:var(--paper-raised);
+    border-top:1px solid var(--line);
+    padding:9px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    z-index:5;
+  }
+  .proctor-status{display:flex; align-items:center; gap:10px;}
+  .status-ring{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--ok);
+    box-shadow:0 0 0 3px var(--ok-soft);
+    animation:breathe 2.4s infinite;
+  }
+  @keyframes breathe{0%,100%{opacity:1;}50%{opacity:0.5;}}
+  .proctor-status .label{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    color:var(--ink-dim);
+  }
+  .proctor-status .label b{color:var(--ok); font-weight:600;}
+  .proctor-note{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    color:var(--ink-faint);
+  }
+
+  /* ---------- Floating camera preview ---------- */
+  .cam-widget{
+    position:fixed;
+    right:24px;
+    bottom:52px;
+    width:150px;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 8px 24px rgba(30,42,74,0.12);
+    z-index:6;
+  }
+  .cam-video-wrap{position:relative; width:100%; aspect-ratio:4/3; background:#12161C;}
+  .cam-video-wrap video{width:100%; height:100%; object-fit:cover; display:block;}
+  .cam-fallback{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px;
+    color:#7D8590;
+    font-family:var(--font-mono);
+    font-size:10px;
+    text-align:center;
+    padding:8px;
+  }
+  .cam-badge{
+    position:absolute; top:6px; left:6px;
+    display:flex; align-items:center; gap:4px;
+    background:rgba(0,0,0,0.55);
+    padding:3px 7px;
+    border-radius:999px;
+    font-family:var(--font-mono);
+    font-size:9px;
+    color:#fff;
+  }
+  .cam-badge .dot{width:5px; height:5px; border-radius:50%; background:#E5555C; animation:blip 1.3s infinite;}
+  @keyframes blip{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .cam-footer{
+    padding:6px 9px;
+    font-family:var(--font-mono);
+    font-size:9.5px;
+    color:var(--ink-dim);
+    display:flex;
+    justify-content:space-between;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  @media (max-width:880px){
+    .layout{grid-template-columns:1fr;}
+    .question-panel{border-right:none; padding-right:0; border-bottom:1px solid var(--line); padding-bottom:24px;}
+    .navigator{padding-left:0; padding-top:20px;}
+    .letterhead-right{gap:14px;}
+    .cam-widget{width:110px; right:14px; bottom:52px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Letterhead -->
+  <header class="letterhead">
+    <div class="letterhead-left">
+      <div class="seal">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E2A4A" stroke-width="1.6"><path d="M12 2l7 4v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-4z"/></svg>
+      </div>
+      <div class="letterhead-titles">
+        <h1>Data Structures &amp; Algorithms — Final Examination</h1>
+        <p>DSA301 · SEC B · AY 2026 · Proctored Online Assessment</p>
+      </div>
+    </div>
+    <div class="letterhead-right">
+      <div class="field">
+        <div class="k">Candidate</div>
+        <div class="v">CAND-1042</div>
+      </div>
+      <div class="field timer" id="timerField">
+        <div class="k">Time Remaining</div>
+        <div class="v" id="timerValue">59:47</div>
+      </div>
+      <button class="submit-btn" id="submitBtn">Submit Exam</button>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="layout">
+
+    <!-- Question panel -->
+    <section class="question-panel">
+      <div class="q-meta">
+        <span class="q-count" id="qCount">Question 1 of 10</span>
+        <span class="q-marks" id="qMarks">4 marks</span>
+      </div>
+      <div class="q-text" id="qText"></div>
+
+      <div class="options" id="options"></div>
+
+      <div class="q-actions">
+        <button class="ghost-btn" id="markBtn">Mark for review</button>
+        <div class="nav-btns">
+          <button class="primary-btn" id="prevBtn" style="background:var(--paper-raised); color:var(--ink); border:1px solid var(--line);">Previous</button>
+          <button class="primary-btn" id="nextBtn">Save &amp; Next</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigator -->
+    <aside class="navigator">
+      <div class="nav-heading">Question Palette</div>
+      <div class="nav-grid" id="navGrid"></div>
+
+      <div class="legend">
+        <div class="legend-row"><span class="legend-dot answered"></span>Answered</div>
+        <div class="legend-row"><span class="legend-dot marked"></span>Marked for review</div>
+        <div class="legend-row"><span class="legend-dot unanswered"></span>Not answered</div>
+      </div>
+
+      <div class="summary">
+        <div>Answered <strong id="sumAnswered">0</strong> / 10</div>
+        <div>Marked <strong id="sumMarked">0</strong></div>
+        <div>Not visited <strong id="sumUnvisited">9</strong></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Proctoring status strip -->
+  <div class="proctor-strip">
+    <div class="proctor-status">
+      <span class="status-ring"></span>
+      <span class="label">Proctoring <b>active</b> — face and gaze monitoring normal</span>
+    </div>
+    <span class="proctor-note">Session ID: EX-8841-B · Do not switch tabs or exit fullscreen</span>
+  </div>
+
+  <!-- Camera preview -->
+  <div class="cam-widget">
+    <div class="cam-video-wrap">
+      <video id="camVideo" autoplay muted playsinline></video>
+      <div class="cam-fallback" id="camFallback">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7D8590" stroke-width="1.6"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Camera preview<br>unavailable
+      </div>
+      <div class="cam-badge"><span class="dot"></span>REC</div>
+    </div>
+    <div class="cam-footer"><span>Monitor</span><span>1 face</span></div>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- Question data (mock) ---------------- */
+const QUESTIONS = [
+  {text:"Which data structure uses LIFO (Last In, First Out) ordering?", marks:4,
+   options:["Queue","Stack","Linked List","Heap"]},
+  {text:"What is the average time complexity of searching in a balanced binary search tree?", marks:4,
+   options:["O(1)","O(n)","O(log n)","O(n log n)"]},
+  {text:"Which traversal of a binary tree visits nodes in non-decreasing order for a BST?", marks:4,
+   options:["Pre-order","Post-order","In-order","Level-order"]},
+  {text:"What is the worst-case time complexity of QuickSort?", marks:4,
+   options:["O(n log n)","O(n)","O(n\u00B2)","O(log n)"]},
+  {text:"Which data structure is most suitable for implementing a priority queue efficiently?", marks:4,
+   options:["Array","Heap","Stack","Doubly linked list"]},
+  {text:"In a hash table, what technique resolves collisions by storing multiple elements in a linked list at the same index?", marks:4,
+   options:["Open addressing","Chaining","Linear probing","Double hashing"]},
+  {text:"What is the space complexity of an adjacency matrix representation of a graph with n vertices?", marks:4,
+   options:["O(n)","O(n log n)","O(n\u00B2)","O(E)"]},
+  {text:"Which algorithm is used to find the shortest path in a weighted graph with no negative edges?", marks:4,
+   options:["Depth-First Search","Dijkstra's Algorithm","Bellman-Ford","Kruskal's Algorithm"]},
+  {text:"What is the time complexity of inserting an element at the head of a singly linked list?", marks:4,
+   options:["O(1)","O(n)","O(log n)","O(n\u00B2)"]},
+  {text:"Which of the following sorting algorithms is stable by default?", marks:4,
+   options:["QuickSort","HeapSort","Merge Sort","Selection Sort"]},
+];
+
+const state = {
+  current: 0,
+  answers: new Array(QUESTIONS.length).fill(null),
+  marked: new Array(QUESTIONS.length).fill(false),
+  visited: new Array(QUESTIONS.length).fill(false),
+};
+
+/* ---------------- Rendering ---------------- */
+const qCountEl = document.getElementById("qCount");
+const qMarksEl = document.getElementById("qMarks");
+const qTextEl = document.getElementById("qText");
+const optionsEl = document.getElementById("options");
+const navGridEl = document.getElementById("navGrid");
+const markBtn = document.getElementById("markBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+
+function renderQuestion(){
+  const i = state.current;
+  const q = QUESTIONS[i];
+  state.visited[i] = true;
+
+  qCountEl.textContent = `Question ${i+1} of ${QUESTIONS.length}`;
+  qMarksEl.textContent = `${q.marks} marks`;
+  qTextEl.textContent = q.text;
+
+  optionsEl.innerHTML = q.options.map((opt, idx) => {
+    const letter = String.fromCharCode(65 + idx);
+    const selected = state.answers[i] === idx;
+    return `
+      <div class="option ${selected ? 'selected' : ''}" data-idx="${idx}">
+        <span class="option-letter">${letter}</span>
+        <span class="option-text">${opt}</span>
+      </div>`;
+  }).join("");
+
+  optionsEl.querySelectorAll(".option").forEach(el => {
+    el.addEventListener("click", () => {
+      state.answers[i] = parseInt(el.dataset.idx, 10);
+      renderQuestion();
+      renderNav();
+    });
+  });
+
+  markBtn.classList.toggle("marked", state.marked[i]);
+  markBtn.textContent = state.marked[i] ? "Marked for review ✓" : "Mark for review";
+
+  prevBtn.disabled = i === 0;
+  nextBtn.textContent = i === QUESTIONS.length - 1 ? "Save & Finish" : "Save & Next";
+
+  renderNav();
+  renderSummary();
+}
+
+function renderNav(){
+  navGridEl.innerHTML = QUESTIONS.map((_, i) => {
+    let cls = "";
+    if(state.answers[i] !== null) cls = "answered";
+    if(state.marked[i]) cls = "marked";
+    if(i === state.current) cls += " current";
+    return `<div class="nav-cell ${cls}" data-idx="${i}">${i+1}</div>`;
+  }).join("");
+
+  navGridEl.querySelectorAll(".nav-cell").forEach(el => {
+    el.addEventListener("click", () => {
+      state.current = parseInt(el.dataset.idx, 10);
+      renderQuestion();
+    });
+  });
+}
+
+function renderSummary(){
+  const answered = state.answers.filter(a => a !== null).length;
+  const marked = state.marked.filter(Boolean).length;
+  const unvisited = state.visited.filter(v => !v).length;
+  document.getElementById("sumAnswered").textContent = answered;
+  document.getElementById("sumMarked").textContent = marked;
+  document.getElementById("sumUnvisited").textContent = unvisited;
+}
+
+markBtn.addEventListener("click", () => {
+  state.marked[state.current] = !state.marked[state.current];
+  renderQuestion();
+});
+
+prevBtn.addEventListener("click", () => {
+  if(state.current > 0){ state.current--; renderQuestion(); }
+});
+
+nextBtn.addEventListener("click", () => {
+  if(state.current < QUESTIONS.length - 1){ state.current++; renderQuestion(); }
+});
+
+document.getElementById("submitBtn").addEventListener("click", () => {
+  const answered = state.answers.filter(a => a !== null).length;
+  const ok = confirm(`You have answered ${answered} of ${QUESTIONS.length} questions.\nSubmit exam now?`);
+  if(ok){
+    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Newsreader',serif;font-size:22px;color:#1E2A4A;text-align:center;padding:20px;">Exam submitted.<br><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C6169;margin-top:8px;">Session EX-8841-B closed. You may close this window.</span></div>`;
+  }
+});
+
+renderQuestion();
+
+/* ---------------- Timer ---------------- */
+let secondsLeft = 59 * 60 + 47;
+const timerValueEl = document.getElementById("timerValue");
+const timerFieldEl = document.getElementById("timerField");
+
+function formatTime(s){
+  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const sec = (s % 60).toString().padStart(2, "0");
+  return `${m}:${sec}`;
+}
+
+setInterval(() => {
+  if(secondsLeft > 0){
+    secondsLeft--;
+    timerValueEl.textContent = formatTime(secondsLeft);
+    timerFieldEl.classList.toggle("critical", secondsLeft <= 300);
+  }
+}, 1000);
+
+/* ---------------- Camera preview (real webcam if permitted) ---------------- */
+const camVideo = document.getElementById("camVideo");
+const camFallback = document.getElementById("camFallback");
+
+if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+  navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    .then(stream => {
+      camVideo.srcObject = stream;
+      camFallback.style.display = "none";
+    })
+    .catch(() => {
+      camVideo.style.display = "none";
+    });
+} else {
+  camVideo.style.display = "none";
+}
+</script>
+
+</body>
+</html>

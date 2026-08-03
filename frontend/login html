@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Access — DSA301 Examination</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5F6F1;
+    --paper-raised:#FFFFFF;
+    --line:#DBDCD3;
+    --ink:#23262B;
+    --ink-dim:#5C6169;
+    --ink-faint:#9498A0;
+    --navy:#1E2A4A;
+    --navy-soft:#EFF1F6;
+    --seal:#8E3B3B;
+    --seal-soft:#F7EAEA;
+    --ok:#4C7A63;
+    --ok-soft:#E7F0EA;
+    --amber:#9C7A2E;
+    --amber-soft:#F5EEDC;
+    --radius:8px;
+    --font-display:'Newsreader', serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14.5px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 20px;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    pointer-events:none;
+    opacity:0.5;
+    background-image:
+      repeating-linear-gradient(115deg, rgba(30,42,74,0.015) 0px, rgba(30,42,74,0.015) 1px, transparent 1px, transparent 14px);
+  }
+
+  button{font-family:inherit; font-size:inherit;}
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--navy);
+    outline-offset:2px;
+  }
+
+  .wrap{
+    position:relative;
+    width:100%;
+    max-width:920px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 20px 60px rgba(30,42,74,0.08);
+  }
+
+  /* ---------- Left: letterhead / context panel ---------- */
+  .context{
+    background:var(--navy);
+    color:#EFF1F6;
+    padding:44px 38px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+  }
+  .context::after{
+    content:"";
+    position:absolute;
+    right:-60px; bottom:-60px;
+    width:220px; height:220px;
+    border:1px dashed rgba(255,255,255,0.12);
+    border-radius:50%;
+  }
+  .context::before{
+    content:"";
+    position:absolute;
+    right:-100px; top:-100px;
+    width:260px; height:260px;
+    border:1px dashed rgba(255,255,255,0.08);
+    border-radius:50%;
+  }
+
+  .ctx-top{position:relative;}
+  .seal{
+    width:44px; height:44px; border-radius:50%;
+    border:1.5px solid rgba(255,255,255,0.55);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:20px;
+    position:relative;
+  }
+  .seal::before{
+    content:"";
+    position:absolute; inset:4px;
+    border-radius:50%;
+    border:1px dashed rgba(255,255,255,0.4);
+  }
+
+  .ctx-top h1{
+    font-family:var(--font-display);
+    font-size:26px;
+    font-weight:600;
+    line-height:1.3;
+    max-width:22ch;
+  }
+  .ctx-top p{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    color:rgba(239,241,246,0.65);
+    margin-top:10px;
+    letter-spacing:0.3px;
+  }
+
+  .ctx-notice{
+    position:relative;
+    margin-top:32px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .notice-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:12.5px;
+    color:rgba(239,241,246,0.8);
+  }
+  .notice-row svg{flex-shrink:0; margin-top:2px; opacity:0.8;}
+
+  .ctx-bottom{
+    position:relative;
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    color:rgba(239,241,246,0.45);
+    border-top:1px solid rgba(255,255,255,0.12);
+    padding-top:14px;
+    margin-top:32px;
+  }
+
+  /* ---------- Right: form panel ---------- */
+  .form-panel{
+    padding:44px 40px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .role-toggle{
+    display:flex;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:3px;
+    margin-bottom:28px;
+  }
+  .role-btn{
+    flex:1;
+    background:none;
+    border:none;
+    padding:8px 0;
+    border-radius:6px;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-dim);
+    cursor:pointer;
+    font-family:var(--font-mono);
+    letter-spacing:0.3px;
+  }
+  .role-btn.active{
+    background:var(--paper-raised);
+    color:var(--navy);
+    box-shadow:0 1px 3px rgba(30,42,74,0.12);
+  }
+
+  .form-panel h2{
+    font-family:var(--font-display);
+    font-size:20px;
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .form-panel .sub{
+    font-size:12.5px;
+    color:var(--ink-dim);
+    margin-bottom:26px;
+  }
+
+  .field-group{margin-bottom:16px;}
+  .field-group label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    color:var(--ink-faint);
+    margin-bottom:6px;
+  }
+  .field-group input{
+    width:100%;
+    padding:11px 13px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:var(--paper);
+    color:var(--ink);
+    font-size:14px;
+    font-family:var(--font-body);
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .field-group input:focus{
+    border-color:var(--navy);
+    background:var(--paper-raised);
+    outline:none;
+  }
+  .field-group input::placeholder{color:var(--ink-faint);}
+
+  .row-between{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:12px;
+    margin:4px 0 22px;
+  }
+  .remember{display:flex; align-items:center; gap:7px; color:var(--ink-dim);}
+  .remember input{accent-color:var(--navy);}
+  .link{color:var(--navy); font-weight:500;}
+  .link:hover{text-decoration:underline;}
+
+  .sign-in-btn{
+    width:100%;
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    padding:12px 0;
+    border-radius:7px;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .sign-in-btn:hover{background:#16203A;}
+  .sign-in-btn:disabled{opacity:0.5; cursor:not-allowed;}
+
+  .error-msg{
+    display:none;
+    background:var(--seal-soft);
+    color:var(--seal);
+    border:1px solid rgba(142,59,59,0.25);
+    padding:9px 12px;
+    border-radius:7px;
+    font-size:12.5px;
+    margin-bottom:16px;
+  }
+  .error-msg.show{display:block;}
+
+  /* ---------- Pre-flight checklist ---------- */
+  .preflight{
+    margin-top:26px;
+    border-top:1px solid var(--line);
+    padding-top:20px;
+  }
+  .preflight-heading{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.8px;
+    color:var(--ink-faint);
+    margin-bottom:12px;
+  }
+  .check-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 0;
+    font-size:12.5px;
+  }
+  .check-left{display:flex; align-items:center; gap:9px; color:var(--ink-dim);}
+  .check-icon{
+    width:16px; height:16px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .status-pill{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    padding:3px 9px;
+    border-radius:999px;
+    font-weight:600;
+  }
+  .status-pill.pending{background:var(--paper); color:var(--ink-faint); border:1px solid var(--line);}
+  .status-pill.ok{background:var(--ok-soft); color:var(--ok);}
+  .status-pill.fail{background:var(--seal-soft); color:var(--seal);}
+
+  @media (max-width:760px){
+    .wrap{grid-template-columns:1fr;}
+    .context{padding:32px 28px;}
+    .form-panel{padding:32px 28px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Left context panel -->
+  <div class="context">
+    <div class="ctx-top">
+      <div class="seal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EFF1F6" stroke-width="1.6"><path d="M12 2l7 4v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-4z"/></svg>
+      </div>
+      <h1>Secure access for proctored examinations</h1>
+      <p>DSA301 · FINAL EXAMINATION · AY 2026</p>
+    </div>
+
+    <div class="ctx-notice">
+      <div class="notice-row">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EFF1F6" stroke-width="1.8"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        <span>Camera and microphone access is required for the full duration of the exam.</span>
+      </div>
+      <div class="notice-row">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EFF1F6" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <span>Your session is monitored by an AI proctor for face presence, gaze, and tab activity.</span>
+      </div>
+      <div class="notice-row">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EFF1F6" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Sign in no earlier than 10 minutes before your scheduled start time.</span>
+      </div>
+    </div>
+
+    <div class="ctx-bottom">
+      INVIGIL PROCTORING PLATFORM · v1.3<br>
+      Need help? contact your exam coordinator
+    </div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="form-panel">
+    <div class="role-toggle">
+      <button class="role-btn active" data-role="student">Student</button>
+      <button class="role-btn" data-role="proctor">Proctor / Admin</button>
+    </div>
+
+    <h2 id="formTitle">Candidate sign in</h2>
+    <p class="sub" id="formSub">Enter your credentials to begin the system check.</p>
+
+    <div class="error-msg" id="errorMsg">Invalid credentials. Please check your ID and password and try again.</div>
+
+    <form id="loginForm">
+      <div class="field-group">
+        <label id="idLabel" for="idInput">Candidate ID</label>
+        <input type="text" id="idInput" placeholder="e.g. CAND-1042" autocomplete="username" required>
+      </div>
+      <div class="field-group">
+        <label for="pwInput">Password</label>
+        <input type="password" id="pwInput" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+
+      <div class="row-between">
+        <label class="remember"><input type="checkbox"> Remember this device</label>
+        <a href="#" class="link">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="sign-in-btn" id="signInBtn">Sign in &amp; run system check</button>
+    </form>
+
+    <div class="preflight">
+      <div class="preflight-heading">System pre-flight check</div>
+
+      <div class="check-row">
+        <div class="check-left">
+          <span class="check-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5C6169" stroke-width="1.8"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          </span>
+          Camera access
+        </div>
+        <span class="status-pill pending" id="camStatus">Pending</span>
+      </div>
+
+      <div class="check-row">
+        <div class="check-left">
+          <span class="check-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5C6169" stroke-width="1.8"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          </span>
+          Microphone access
+        </div>
+        <span class="status-pill pending" id="micStatus">Pending</span>
+      </div>
+
+      <div class="check-row">
+        <div class="check-left">
+          <span class="check-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5C6169" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="18" x2="12" y2="21"/></svg>
+          </span>
+          Browser compatibility
+        </div>
+        <span class="status-pill ok" id="browserStatus">OK</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const roleBtns = document.querySelectorAll(".role-btn");
+const formTitle = document.getElementById("formTitle");
+const formSub = document.getElementById("formSub");
+const idLabel = document.getElementById("idLabel");
+const idInput = document.getElementById("idInput");
+
+roleBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    roleBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    if(btn.dataset.role === "student"){
+      formTitle.textContent = "Candidate sign in";
+      formSub.textContent = "Enter your credentials to begin the system check.";
+      idLabel.textContent = "Candidate ID";
+      idInput.placeholder = "e.g. CAND-1042";
+    } else {
+      formTitle.textContent = "Proctor sign in";
+      formSub.textContent = "Enter your staff credentials to open the control room.";
+      idLabel.textContent = "Staff email";
+      idInput.placeholder = "e.g. r.apte@university.edu";
+    }
+  });
+});
+
+const form = document.getElementById("loginForm");
+const errorMsg = document.getElementById("errorMsg");
+const signInBtn = document.getElementById("signInBtn");
+const camStatus = document.getElementById("camStatus");
+const micStatus = document.getElementById("micStatus");
+
+function setStatus(el, state, text){
+  el.className = `status-pill ${state}`;
+  el.textContent = text;
+}
+
+async function runPreflight(){
+  setStatus(camStatus, "pending", "Checking…");
+  setStatus(micStatus, "pending", "Checking…");
+
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    setStatus(camStatus, "fail", "Unsupported");
+    setStatus(micStatus, "fail", "Unsupported");
+    return false;
+  }
+
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    setStatus(camStatus, "ok", "Detected");
+    setStatus(micStatus, "ok", "Detected");
+    stream.getTracks().forEach(t => t.stop());
+    return true;
+  } catch(err){
+    setStatus(camStatus, "fail", "Blocked");
+    setStatus(micStatus, "fail", "Blocked");
+    return false;
+  }
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errorMsg.classList.remove("show");
+
+  if(!idInput.value.trim() || !document.getElementById("pwInput").value.trim()){
+    errorMsg.textContent = "Please fill in both fields to continue.";
+    errorMsg.classList.add("show");
+    return;
+  }
+
+  signInBtn.disabled = true;
+  signInBtn.textContent = "Running system check…";
+
+  const passed = await runPreflight();
+
+  if(passed){
+    signInBtn.textContent = "Access granted — redirecting…";
+    setTimeout(() => {
+      document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Newsreader',serif;font-size:22px;color:#1E2A4A;text-align:center;padding:20px;">System check passed.<br><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C6169;margin-top:8px;">You would now be redirected to the exam interface.</span></div>`;
+    }, 900);
+  } else {
+    signInBtn.disabled = false;
+    signInBtn.textContent = "Sign in & run system check";
+    errorMsg.textContent = "Camera/microphone access is required to proceed. Please allow permissions and try again.";
+    errorMsg.classList.add("show");
+  }
+});
+</script>
+
+</body>
+</html>
